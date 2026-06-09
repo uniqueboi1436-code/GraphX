@@ -41,6 +41,7 @@ interface GraphStore {
   sliders: Record<string, SliderConfig>;
   activeExpressionId: string | null;
   pinnedPOIs: Record<string, boolean>;
+  theme: 'dark' | 'white';
 
   // Expression actions
   addExpression:   (index?: number) => void;
@@ -64,6 +65,7 @@ interface GraphStore {
   // POI & UI state actions
   setActiveExpressionId: (id: string | null) => void;
   togglePinnedPOI: (id: string) => void;
+  setTheme: (theme: 'dark' | 'white') => void;
 }
 
 export const COLORS = ['#c74440', '#2d70b3', '#388c46', '#fa7e19', '#6042a6', '#000000'];
@@ -79,6 +81,7 @@ export const useGraphStore = create<GraphStore>((set) => ({
   sliders: {},
   activeExpressionId: null,
   pinnedPOIs: {},
+  theme: 'dark',
 
   // ── Expression ────────────────────────────────────────────────────────
   addExpression: (index) => {
@@ -214,4 +217,6 @@ export const useGraphStore = create<GraphStore>((set) => ({
     set((state) => ({
       pinnedPOIs: { ...state.pinnedPOIs, [id]: !state.pinnedPOIs[id] }
     })),
+
+  setTheme: (theme) => set({ theme }),
 }));

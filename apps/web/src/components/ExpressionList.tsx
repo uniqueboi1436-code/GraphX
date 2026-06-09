@@ -5,6 +5,7 @@ import type { Expression } from '../store/useGraphStore';
 import { detectType, getUndefinedVariables } from '@graphcalc/math-engine';
 import { SliderRow } from './SliderRow';
 import { TableExpression } from './TableExpression';
+import { MathInput } from './MathInput';
 
 const KNOWN_VARS = ['x', 'y', 't', 'theta', 'r'];
 
@@ -70,6 +71,7 @@ const ExpressionRow: React.FC<{ index: number; expression: Expression }> = ({
 
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [sliderVars,      setSliderVars]      = useState<string[]>([]);
+  const [isFocused,       setIsFocused]       = useState(false);
 
   useEffect(() => {
     if (!expression.latex || expression.type === 'note' || expression.type === 'slider') {
@@ -81,8 +83,7 @@ const ExpressionRow: React.FC<{ index: number; expression: Expression }> = ({
     undef.forEach(v => { if (!sliders[v]) setSlider(v, { min: -10, max: 10, value: 1, step: 0.01 }); });
   }, [expression.latex, expression.type]);
 
-  const handleLatexChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const latex = e.target.value;
+  const handleLatexChange = (latex: string) => {
     let type: Expression['type'] = 'equation';
     if (latex.startsWith('"') || latex.startsWith('`')) {
       type = 'note';
@@ -93,12 +94,24 @@ const ExpressionRow: React.FC<{ index: number; expression: Expression }> = ({
     updateExpression(expression.id, { latex, type });
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') { e.preventDefault(); addExpression(index); }
+  const handleEnter = () => {
+    addExpression(index);
+  };
+
+  const handleFocus = () => {
+    setIsFocused(true);
+    setActiveExpressionId(expression.id);
+  };
+
+  const handleBlur = () => {
+    setIsFocused(false);
   };
 
   return (
-    <div className="flex flex-col border-b border-gray-200 dark:border-gray-800 group">
+    <div
+      className={`flex flex-col border-b border-gray-200 dark:border-gray-800 group
+        ${isFocused ? 'bg-white dark:bg-gray-900' : 'bg-white dark:bg-gray-900'}`}
+    >
       <div className="flex items-start p-2 gap-2 relative bg-white dark:bg-gray-900 transition-colors">
 
         {/* Color circle */}
@@ -132,25 +145,25 @@ const ExpressionRow: React.FC<{ index: number; expression: Expression }> = ({
 
         {/* Math input */}
         <div className="flex-1 min-w-0 relative">
-          <textarea
-            value={expression.latex}
-            onChange={handleLatexChange}
-            onKeyDown={handleKeyDown}
-            onFocus={() => setActiveExpressionId(expression.id)}
-            onClick={() => setActiveExpressionId(expression.id)}
-            className={`w-full min-h-[40px] px-2 py-1 text-lg border-none shadow-none focus:outline-none
-              focus:ring-0 bg-transparent text-gray-900 dark:text-gray-100 resize-none font-mono
-              ${expression.error ? 'border-b-2 border-red-500' : ''}`}
-            placeholder="Type an expression…"
-            rows={1}
-          />
-          {expression.type === 'note' && (
-            <div className="absolute inset-0 bg-white dark:bg-gray-900 z-10 pointer-events-none flex items-center px-2">
+          {expression.type === 'note' ? (
+            // Note expressions use plain text
+            <div className="bg-white dark:bg-gray-900 flex items-center px-2 min-h-[40px]">
               <span className="text-gray-500 italic text-lg px-2">
                 {expression.latex.replace(/^"|``?/, '')}
               </span>
             </div>
+          ) : (
+            <MathInput
+              latex={expression.latex}
+              onChange={handleLatexChange}
+              onEnter={handleEnter}
+              onFocus={handleFocus}
+              onBlur={handleBlur}
+              color={expression.color}
+              hasError={expression.error}
+            />
           )}
+
           {expression.type && expression.latex.length > 0 && expression.type !== 'note' && (
             <div className="mt-0.5 flex gap-1">
               <span className="text-[10px] font-semibold tracking-wider uppercase px-1.5 py-0.5

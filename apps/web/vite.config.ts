@@ -5,10 +5,12 @@ import { viteSingleFile } from 'vite-plugin-singlefile'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), viteSingleFile()],
+  publicDir: false,
   define: {
     global: 'window',
   },
-  optimizeDeps: {
-    exclude: ['react-mathquill'],
+  build: {
+    outDir: '../../..',
+    emptyOutDir: false,
   },
 })

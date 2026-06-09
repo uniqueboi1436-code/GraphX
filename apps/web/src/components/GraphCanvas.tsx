@@ -37,6 +37,7 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({ expressions, window, o
   const activeExpressionId = useGraphStore(s => s.activeExpressionId);
   const pinnedPOIs = useGraphStore(s => s.pinnedPOIs);
   const togglePinnedPOI = useGraphStore(s => s.togglePinnedPOI);
+  const theme = useGraphStore(s => s.theme);
   
   const hoveredPointRef = useRef<{ x: number, y: number, cx: number, cy: number, label?: string, poiId?: string } | null>(null);
   const activeExpressionIdRef = useRef<string | null>(activeExpressionId);
@@ -45,6 +46,12 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({ expressions, window, o
   // Keep refs to avoid rebinding requestAnimationFrame logic continuously
   const windowRef = useRef<GraphWindow>(window);
   const expressionsRef = useRef<ExpressionData[]>(expressions);
+  const themeRef = useRef(theme);
+
+  useEffect(() => {
+    themeRef.current = theme;
+    requestRender();
+  }, [theme]);
 
   useEffect(() => {
     activeExpressionIdRef.current = activeExpressionId;
@@ -98,7 +105,34 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({ expressions, window, o
       return { cx, cy };
     };
 
-    ctx.clearRect(0, 0, clientWidth, clientHeight);
+    const palette = themeRef.current === 'white'
+      ? {
+          background: '#ffffff',
+          minorGrid: 'rgba(0, 0, 0, 0.08)',
+          majorGrid: 'rgba(0, 0, 0, 0.22)',
+          axis: 'rgba(0, 0, 0, 0.7)',
+          label: 'rgba(17, 24, 39, 0.9)',
+          crosshair: 'rgba(17, 24, 39, 0.28)',
+          pointStroke: '#ffffff',
+          hoverDotFill: '#ffffff',
+          tooltipBg: 'rgba(17, 24, 39, 0.9)',
+          tooltipText: '#f9fafb',
+        }
+      : {
+          background: '#111827',
+          minorGrid: 'rgba(255, 255, 255, 0.05)',
+          majorGrid: 'rgba(255, 255, 255, 0.15)',
+          axis: 'rgba(255, 255, 255, 0.4)',
+          label: 'rgba(255, 255, 255, 0.7)',
+          crosshair: 'rgba(255, 255, 255, 0.3)',
+          pointStroke: '#ffffff',
+          hoverDotFill: '#ffffff',
+          tooltipBg: 'rgba(17, 24, 39, 0.9)',
+          tooltipText: '#f9fafb',
+        };
+
+    ctx.fillStyle = palette.background;
+    ctx.fillRect(0, 0, clientWidth, clientHeight);
 
     const xRange = w.xMax - w.xMin;
     const yRange = w.yMax - w.yMin;
@@ -121,7 +155,7 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({ expressions, window, o
     ctx.textBaseline = 'top';
 
     const drawGridLines = (step: number, isMinor: boolean) => {
-      ctx.strokeStyle = isMinor ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.15)';
+      ctx.strokeStyle = isMinor ? palette.minorGrid : palette.majorGrid;
       ctx.beginPath();
       
       const startX = Math.floor(w.xMin / step) * step;
@@ -143,7 +177,7 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({ expressions, window, o
     drawGridLines(xStep / 5, true);
     drawGridLines(xStep, false);
 
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+    ctx.strokeStyle = palette.axis;
     ctx.lineWidth = 2;
     ctx.beginPath();
     const origin = worldToCanvas(0, 0);
@@ -158,7 +192,7 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({ expressions, window, o
     }
     ctx.stroke();
 
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+    ctx.fillStyle = palette.label;
     const startXLabel = Math.floor(w.xMin / xStep) * xStep;
     for (let x = startXLabel; x <= w.xMax; x += xStep) {
       if (Math.abs(x) < 1e-10) continue;
@@ -348,7 +382,7 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({ expressions, window, o
           ctx.arc(cx, cy, isHovered ? 6 : 4, 0, 2 * Math.PI);
           ctx.fillStyle = isHovered ? '#6b7280' : '#9ca3af';
           ctx.fill();
-          ctx.strokeStyle = '#ffffff';
+          ctx.strokeStyle = palette.pointStroke;
           ctx.lineWidth = 1.5;
           ctx.stroke();
 
@@ -363,11 +397,11 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({ expressions, window, o
             if (bx + boxW > clientWidth - 4) bx = cx - boxW - 12;
             if (by < 4) by = 4;
 
-            ctx.fillStyle = isPinned ? 'rgba(37,99,235,0.92)' : 'rgba(17,24,39,0.9)';
+            ctx.fillStyle = isPinned ? 'rgba(37,99,235,0.92)' : palette.tooltipBg;
             ctx.beginPath();
             ctx.roundRect(bx, by, boxW, boxH, 4);
             ctx.fill();
-            ctx.fillStyle = '#f9fafb';
+            ctx.fillStyle = palette.tooltipText;
             ctx.fillText(text, bx + pad, by + boxH / 2);
 
             // If pinned, draw a small pin indicator circle
@@ -376,7 +410,7 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({ expressions, window, o
               ctx.arc(cx, cy, 5, 0, 2 * Math.PI);
               ctx.fillStyle = '#2563eb';
               ctx.fill();
-              ctx.strokeStyle = '#ffffff';
+              ctx.strokeStyle = palette.pointStroke;
               ctx.lineWidth = 1.5;
               ctx.stroke();
             }
@@ -392,7 +426,7 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({ expressions, window, o
       // Draw crosshair lines
       ctx.save();
       ctx.setLineDash([4, 4]);
-      ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+      ctx.strokeStyle = palette.crosshair;
       ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.moveTo(hPoint.cx, 0); ctx.lineTo(hPoint.cx, clientHeight);
@@ -404,7 +438,7 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({ expressions, window, o
       // Draw dot
       ctx.beginPath();
       ctx.arc(hPoint.cx, hPoint.cy, 5, 0, 2 * Math.PI);
-      ctx.fillStyle = '#ffffff';
+      ctx.fillStyle = palette.hoverDotFill;
       ctx.fill();
       ctx.strokeStyle = '#3b82f6';
       ctx.lineWidth = 2;
@@ -424,11 +458,11 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({ expressions, window, o
       if (bx + boxW > clientWidth - 4) bx = hPoint.cx - boxW - 12;
       if (by < 4) by = 4;
 
-      ctx.fillStyle = 'rgba(17,24,39,0.9)';
+      ctx.fillStyle = palette.tooltipBg;
       ctx.beginPath();
       ctx.roundRect(bx, by, boxW, boxH, 4);
       ctx.fill();
-      ctx.fillStyle = '#f9fafb';
+      ctx.fillStyle = palette.tooltipText;
       ctx.fillText(text, bx + pad, by + boxH / 2);
     }
 
@@ -674,7 +708,7 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({ expressions, window, o
         height: '100%', 
         touchAction: 'none', 
         cursor: 'crosshair',
-        backgroundColor: '#111827' // Tailwind gray-900 equivalent for dark mode base
+        backgroundColor: theme === 'white' ? '#ffffff' : '#111827'
       }}
     />
   );

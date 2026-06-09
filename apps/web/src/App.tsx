@@ -1,4 +1,6 @@
+import './App.css';
 import { useMemo } from 'react';
+import { Moon, Sun } from 'lucide-react';
 import { ExpressionList } from './components/ExpressionList';
 import { GraphCanvas } from './components/GraphCanvas';
 import type { Point2D, InequalityRegion } from '@graphcalc/math-engine';
@@ -7,19 +9,109 @@ import { evaluateRange, parse, evaluateAST, findRoots, findExtrema, findIntersec
 import type { POI } from '@graphcalc/math-engine';
 
 function cleanLatex(latex: string): string {
-  return latex
-    .replace(/\\left\(/g, '(')
-    .replace(/\\right\)/g, ')')
-    .replace(/\\cdot/g, '*')
-    .replace(/\\sin/g, 'sin')
-    .replace(/\\cos/g, 'cos')
-    .replace(/\\tan/g, 'tan')
-    .replace(/\\pi/g, 'pi')
-    .replace(/\\sqrt\{([^}]+)\}/g, 'sqrt($1)')
-    .replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, '($1)/($2)')
-    .replace(/\\le/g, '<=')
-    .replace(/\\ge/g, '>=')
-    .replace(/\\/g, '');
+  let s = latex;
+
+  // ── Delimiters ──────────────────────────────────────────────────────────
+  s = s.replace(/\\left\s*\|/g, 'abs(');
+  s = s.replace(/\\right\s*\|/g, ')');
+  s = s.replace(/\\left\s*\(/g, '(');
+  s = s.replace(/\\right\s*\)/g, ')');
+  s = s.replace(/\\left\s*\[/g, '(');
+  s = s.replace(/\\right\s*\]/g, ')');
+  s = s.replace(/\\left\s*\{/g, '(');
+  s = s.replace(/\\right\s*\}/g, ')');
+
+  // ── Fractions (handle up to 2 levels of nesting greedily) ──────────────
+  // Use iterative replacement so nested fracs resolve correctly
+  for (let i = 0; i < 4; i++) {
+    s = s.replace(/\\frac\{([^{}]*)\}\{([^{}]*)\}/g, '(($1)/($2))');
+  }
+
+  // ── Roots ───────────────────────────────────────────────────────────────
+  s = s.replace(/\\sqrt\[([^\]]+)\]\{([^}]*)\}/g, '($2)^(1/($1))'); // nth root
+  s = s.replace(/\\sqrt\{([^}]*)\}/g, 'sqrt($1)');
+
+  // ── Operators ───────────────────────────────────────────────────────────
+  s = s.replace(/\\cdot/g, '*');
+  s = s.replace(/\\times/g, '*');
+  s = s.replace(/\\div/g, '/');
+
+  // ── Trig & functions ────────────────────────────────────────────────────
+  s = s.replace(/\\operatorname\{([^}]+)\}/g, '$1');
+  s = s.replace(/\\sin/g, 'sin');
+  s = s.replace(/\\cos/g, 'cos');
+  s = s.replace(/\\tan/g, 'tan');
+  s = s.replace(/\\sec/g, 'sec');
+  s = s.replace(/\\csc/g, 'csc');
+  s = s.replace(/\\cot/g, 'cot');
+  s = s.replace(/\\arcsin/g, 'arcsin');
+  s = s.replace(/\\arccos/g, 'arccos');
+  s = s.replace(/\\arctan/g, 'arctan');
+  s = s.replace(/\\sinh/g, 'sinh');
+  s = s.replace(/\\cosh/g, 'cosh');
+  s = s.replace(/\\tanh/g, 'tanh');
+  s = s.replace(/\\ln/g, 'ln');
+  s = s.replace(/\\log/g, 'log');
+  s = s.replace(/\\exp/g, 'exp');
+  s = s.replace(/\\abs/g, 'abs');
+  s = s.replace(/\\max/g, 'max');
+  s = s.replace(/\\min/g, 'min');
+  s = s.replace(/\\mod/g, 'mod');
+  s = s.replace(/\\ceil/g, 'ceil');
+  s = s.replace(/\\floor/g, 'floor');
+  s = s.replace(/\\sign/g, 'sign');
+
+  // ── Greek letters ───────────────────────────────────────────────────────
+  s = s.replace(/\\pi/g, 'pi');
+  s = s.replace(/\\theta/g, 'theta');
+  s = s.replace(/\\alpha/g, 'alpha');
+  s = s.replace(/\\beta/g, 'beta');
+  s = s.replace(/\\gamma/g, 'gamma');
+  s = s.replace(/\\delta/g, 'delta');
+  s = s.replace(/\\epsilon/g, 'epsilon');
+  s = s.replace(/\\zeta/g, 'zeta');
+  s = s.replace(/\\eta/g, 'eta');
+  s = s.replace(/\\iota/g, 'iota');
+  s = s.replace(/\\kappa/g, 'kappa');
+  s = s.replace(/\\lambda/g, 'lambda');
+  s = s.replace(/\\mu/g, 'mu');
+  s = s.replace(/\\nu/g, 'nu');
+  s = s.replace(/\\xi/g, 'xi');
+  s = s.replace(/\\rho/g, 'rho');
+  s = s.replace(/\\sigma/g, 'sigma');
+  s = s.replace(/\\tau/g, 'tau');
+  s = s.replace(/\\upsilon/g, 'upsilon');
+  s = s.replace(/\\phi/g, 'phi');
+  s = s.replace(/\\psi/g, 'psi');
+  s = s.replace(/\\omega/g, 'omega');
+
+  // ── Constants ───────────────────────────────────────────────────────────
+  s = s.replace(/\\infty/g, 'Infinity');
+  s = s.replace(/\\infinity/g, 'Infinity');
+  s = s.replace(/\\e(?![a-zA-Z])/g, 'e');
+
+  // ── Comparison operators ─────────────────────────────────────────────
+  s = s.replace(/\\le(?![a-zA-Z])/g, '<=');
+  s = s.replace(/\\ge(?![a-zA-Z])/g, '>=');
+  s = s.replace(/\\ne(?![a-zA-Z])/g, '!=');
+  s = s.replace(/\\neq/g, '!=');
+  s = s.replace(/\\leq/g, '<=');
+  s = s.replace(/\\geq/g, '>=');
+
+  // ── Integrals / sums / products ─────────────────────────────────────────
+  // MathQuill outputs \int_{a}^{b} — the math-engine parser handles the full form
+  // so we just strip backslashes from keywords that the parser recognizes
+  s = s.replace(/\\int/g, 'int');
+  s = s.replace(/\\sum/g, 'sum');
+  s = s.replace(/\\prod/g, 'prod');
+  s = s.replace(/\\_\{/g, '_{');
+  s = s.replace(/\\\^\{/g, '^{');
+
+  // ── Strip remaining LaTeX backslash commands ────────────────────────────
+  // Must come last so specific replacements above take precedence
+  s = s.replace(/\\([a-zA-Z]+)/g, '$1');
+
+  return s;
 }
 
 /** Parse a cell value from a table — supports fractions like 1/3 */
@@ -38,6 +130,8 @@ function App() {
   const setWindow    = useGraphStore((state) => state.setWindow);
   const sliders      = useGraphStore((state) => state.sliders);
   const activeExpressionId = useGraphStore((state) => state.activeExpressionId);
+  const theme        = useGraphStore((state) => state.theme);
+  const setTheme     = useGraphStore((state) => state.setTheme);
 
   // Build a flat variable map from all active sliders
   const sliderVars = useMemo<Record<string, number>>(() => {
@@ -290,7 +384,7 @@ function App() {
   }, [expressions, window.xMin, window.xMax, window.yMin, window.yMax, sliderVars, activeExpressionId]);
 
   return (
-    <div className="flex h-screen w-full flex-col-reverse md:flex-row bg-white dark:bg-[#111827] text-gray-900 dark:text-white overflow-hidden">
+    <div className={`${theme === 'dark' ? 'dark' : ''} flex h-screen w-full flex-col-reverse md:flex-row bg-white dark:bg-[#111827] text-gray-900 dark:text-white overflow-hidden`}>
       {/* Left panel */}
       <div className="w-full h-1/3 md:w-[320px] md:h-full flex-shrink-0 z-20 border-t md:border-t-0 md:border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-2xl transition-all">
         <ExpressionList />
@@ -309,6 +403,26 @@ function App() {
             </span>
           </div>
           <div className="flex gap-2">
+            <div className="flex items-center rounded-md border border-gray-200 bg-white p-0.5 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+              <button
+                type="button"
+                aria-label="White theme"
+                title="White theme"
+                onClick={() => setTheme('white')}
+                className={`rounded p-1.5 transition-colors ${theme === 'white' ? 'bg-gray-100 text-gray-900' : 'text-gray-500 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700'}`}
+              >
+                <Sun size={16} />
+              </button>
+              <button
+                type="button"
+                aria-label="Dark theme"
+                title="Dark theme"
+                onClick={() => setTheme('dark')}
+                className={`rounded p-1.5 transition-colors ${theme === 'dark' ? 'bg-gray-700 text-white' : 'text-gray-500 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700'}`}
+              >
+                <Moon size={16} />
+              </button>
+            </div>
             <button className="px-4 py-1.5 text-sm font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors">
               Save
             </button>
