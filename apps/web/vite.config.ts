@@ -5,12 +5,10 @@ import { viteSingleFile } from 'vite-plugin-singlefile'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), viteSingleFile()],
-  publicDir: false,
   define: {
     global: 'window',
   },
   build: {
-    outDir: '../../..',
-    emptyOutDir: false,
+    outDir: 'dist',
   },
 })
