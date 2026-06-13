@@ -2,8 +2,8 @@ import React, { useState, useCallback } from 'react';
 import { Trash2, Plus, TrendingUp, X, GripVertical } from 'lucide-react';
 import { useGraphStore } from '../store/useGraphStore';
 import type { Expression } from '../store/useGraphStore';
-import { fitRegression } from '@graphcalc/math-engine';
-import type { RegressionType } from '@graphcalc/math-engine';
+import { fitRegression } from '@graphx/math-engine';
+import type { RegressionType } from '@graphx/math-engine';
 
 interface Props { expression: Expression }
 

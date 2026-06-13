@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import type { GraphWindow } from '../components/GraphCanvas';
-import type { RegressionResult } from '@graphcalc/math-engine';
+import type { RegressionResult } from '@graphx/math-engine';
 
 // ── Table types ────────────────────────────────────────────────────────────
 export interface TableRow {

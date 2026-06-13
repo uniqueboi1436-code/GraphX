@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useCallback } from 'react';
-import type { POI, InequalityRegion } from '@graphcalc/math-engine';
-import { formatCoordinates } from '@graphcalc/math-engine';
+import type { POI, InequalityRegion } from '@graphx/math-engine';
+import { formatCoordinates } from '@graphx/math-engine';
 import { useGraphStore } from '../store/useGraphStore';
 
 export interface Point2D { x: number; y: number; }

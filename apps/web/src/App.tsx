@@ -3,10 +3,10 @@ import { useMemo } from 'react';
 import { Moon, Sun } from 'lucide-react';
 import { ExpressionList } from './components/ExpressionList';
 import { GraphCanvas } from './components/GraphCanvas';
-import type { Point2D, InequalityRegion } from '@graphcalc/math-engine';
+import type { Point2D, InequalityRegion } from '@graphx/math-engine';
 import { useGraphStore } from './store/useGraphStore';
-import { evaluateRange, parse, evaluateAST, findRoots, findExtrema, findIntersections, getYIntercept, evaluateInequality, detectInequalityOp } from '@graphcalc/math-engine';
-import type { POI } from '@graphcalc/math-engine';
+import { evaluateRange, parse, evaluateAST, findRoots, findExtrema, findIntersections, getYIntercept, evaluateInequality, detectInequalityOp } from '@graphx/math-engine';
+import type { POI } from '@graphx/math-engine';
 
 function cleanLatex(latex: string): string {
   let s = latex;
@@ -399,7 +399,7 @@ function App() {
               <span className="text-white font-bold text-xs">G</span>
             </div>
             <span className="text-xl font-bold tracking-tight text-gray-800 dark:text-gray-100">
-              GraphCalc
+              GraphX
             </span>
           </div>
           <div className="flex gap-2">

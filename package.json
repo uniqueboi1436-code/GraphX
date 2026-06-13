@@ -1,5 +1,5 @@
 {
-  "name": "graphcalc",
+  "name": "graphx",
   "private": true,
   "packageManager": "pnpm@10.33.2",
   "scripts": {

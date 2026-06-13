@@ -23,10 +23,10 @@ importers:
 
   apps/mobile:
     dependencies:
-      '@graphcalc/math-engine':
+      '@graphx/math-engine':
         specifier: workspace:*
         version: link:../../packages/math-engine
-      '@graphcalc/ui':
+      '@graphx/ui':
         specifier: workspace:*
         version: link:../../packages/ui
       expo:
@@ -51,10 +51,10 @@ importers:
 
   apps/web:
     dependencies:
-      '@graphcalc/math-engine':
+      '@graphx/math-engine':
         specifier: workspace:*
         version: link:../../packages/math-engine
-      '@graphcalc/ui':
+      '@graphx/ui':
         specifier: workspace:*
         version: link:../../packages/ui
       '@types/jquery':

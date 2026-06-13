@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Eye, EyeOff, Trash2, Table2, FunctionSquare } from 'lucide-react';
 import { useGraphStore, COLORS } from '../store/useGraphStore';
 import type { Expression } from '../store/useGraphStore';
-import { detectType, getUndefinedVariables } from '@graphcalc/math-engine';
+import { detectType, getUndefinedVariables } from '@graphx/math-engine';
 import { SliderRow } from './SliderRow';
 import { TableExpression } from './TableExpression';
 import { MathInput } from './MathInput';

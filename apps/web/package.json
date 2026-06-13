@@ -10,8 +10,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@graphcalc/math-engine": "workspace:*",
-    "@graphcalc/ui": "workspace:*",
+    "@graphx/math-engine": "workspace:*",
+    "@graphx/ui": "workspace:*",
     "@types/jquery": "^4.0.0",
     "jquery": "^4.0.0",
     "lucide-react": "^1.14.0",
