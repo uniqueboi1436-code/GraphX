@@ -3,9 +3,15 @@ import { parse } from './parser';
 
 const BUILTIN_CONSTANTS = new Set(['pi', 'e', 'Infinity']);
 const BUILTIN_FUNCTIONS = new Set([
-  'sin', 'cos', 'tan', 'asin', 'acos', 'atan',
-  'log', 'ln', 'sqrt', 'abs', 'floor', 'ceil',
-  'round', 'exp', 'sign', 'mod', 'sum'
+  'sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'atan2',
+  'sec', 'csc', 'cosec', 'cot', 'asec', 'acsc', 'acosec', 'acot',
+  'sinh', 'cosh', 'tanh', 'asinh', 'acosh', 'atanh',
+  'sech', 'csch', 'cosech', 'coth', 'asech', 'acsch', 'acosech', 'acoth',
+  'log', 'ln', 'exp', 'log2', 'log10', 'log_2', 'log_10',
+  'sqrt', 'cbrt', 'nthroot',
+  'abs', 'floor', 'ceil', 'round', 'sign',
+  'min', 'max', 'mod', 'gcd', 'lcm', 'hypot', 'pow',
+  'sum', 'product', 'mean', 'length', 'integral', 'limit'
 ]);
 
 /** Recursively collect every free variable name referenced in the AST */

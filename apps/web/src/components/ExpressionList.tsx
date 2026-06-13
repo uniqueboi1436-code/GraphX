@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Eye, EyeOff, Trash2, Table2, FunctionSquare } from 'lucide-react';
+import { Eye, EyeOff, Trash2, Table2, FunctionSquare, Keyboard } from 'lucide-react';
 import { useGraphStore, COLORS } from '../store/useGraphStore';
 import type { Expression } from '../store/useGraphStore';
 import { detectType, getUndefinedVariables } from '@graphx/math-engine';
@@ -204,6 +204,8 @@ export const ExpressionList: React.FC = () => {
   const expressions   = useGraphStore(s => s.expressions);
   const addExpression = useGraphStore(s => s.addExpression);
   const insertTable   = useGraphStore(s => s.insertTable);
+  const setKeyboardOpen = useGraphStore(s => s.setKeyboardOpen);
+  const isKeyboardOpen  = useGraphStore(s => s.isKeyboardOpen);
 
   return (
     <div className="w-full h-full flex flex-col bg-white dark:bg-gray-900 shadow-xl overflow-hidden border-r border-gray-200 dark:border-gray-800">
@@ -222,6 +224,17 @@ export const ExpressionList: React.FC = () => {
             <ExpressionRow key={expr.id} index={index} expression={expr} />
           ),
         )}
+      </div>
+      
+      {/* Footer Keyboard Toggle */}
+      <div className="p-2 bg-gray-50 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex items-center justify-start z-10">
+        <button
+          onClick={() => setKeyboardOpen(!isKeyboardOpen)}
+          className={`p-2 rounded-md transition-colors ${isKeyboardOpen ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/50 dark:text-blue-400' : 'text-gray-500 hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-gray-700'}`}
+          title="Show keyboard"
+        >
+          <Keyboard size={20} />
+        </button>
       </div>
     </div>
   );

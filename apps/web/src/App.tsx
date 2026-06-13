@@ -3,9 +3,21 @@ import { useMemo } from 'react';
 import { Moon, Sun } from 'lucide-react';
 import { ExpressionList } from './components/ExpressionList';
 import { GraphCanvas } from './components/GraphCanvas';
+import { VirtualKeyboard } from './components/VirtualKeyboard';
 import type { Point2D, InequalityRegion } from '@graphx/math-engine';
 import { useGraphStore } from './store/useGraphStore';
-import { evaluateRange, parse, evaluateAST, findRoots, findExtrema, findIntersections, getYIntercept, evaluateInequality, detectInequalityOp } from '@graphx/math-engine';
+import {
+  evaluateRange,
+  evaluateParametricRange,
+  parse,
+  evaluateAST,
+  findRoots,
+  findExtrema,
+  findIntersections,
+  getYIntercept,
+  evaluateInequality,
+  detectInequalityOp,
+} from '@graphx/math-engine';
 import type { POI } from '@graphx/math-engine';
 
 function cleanLatex(latex: string): string {
@@ -38,28 +50,73 @@ function cleanLatex(latex: string): string {
 
   // ── Trig & functions ────────────────────────────────────────────────────
   s = s.replace(/\\operatorname\{([^}]+)\}/g, '$1');
+  
+  // Inverse trig: \sin^{-1} notation (from MathQuill virtual keyboard)
+  s = s.replace(/\\sin\^\{-1\}/g, 'asin');
+  s = s.replace(/\\cos\^\{-1\}/g, 'acos');
+  s = s.replace(/\\tan\^\{-1\}/g, 'atan');
+  s = s.replace(/\\sec\^\{-1\}/g, 'asec');
+  s = s.replace(/\\csc\^\{-1\}/g, 'acsc');
+  s = s.replace(/\\cot\^\{-1\}/g, 'acot');
+
+  // Inverse hyperbolic trig: \sinh^{-1} notation
+  s = s.replace(/\\sinh\^\{-1\}/g, 'asinh');
+  s = s.replace(/\\cosh\^\{-1\}/g, 'acosh');
+  s = s.replace(/\\tanh\^\{-1\}/g, 'atanh');
+  s = s.replace(/\\sech\^\{-1\}/g, 'asech');
+  s = s.replace(/\\csch\^\{-1\}/g, 'acsch');
+  s = s.replace(/\\coth\^\{-1\}/g, 'acoth');
+
+  // arcXXX aliases → evaluator names (asin, acos, atan, ...)
+  s = s.replace(/\\?arcsinh/g, 'asinh');
+  s = s.replace(/\\?arccosh/g, 'acosh');
+  s = s.replace(/\\?arctanh/g, 'atanh');
+  s = s.replace(/\\?arcsech/g, 'asech');
+  s = s.replace(/\\?arccsch/g, 'acsch');
+  s = s.replace(/\\?arccoth/g, 'acoth');
+  s = s.replace(/\\?arcsec/g,  'asec');
+  s = s.replace(/\\?arccsc/g,  'acsc');
+  s = s.replace(/\\?arccot/g,  'acot');
+  s = s.replace(/\\?arcsin/g,  'asin');
+  s = s.replace(/\\?arccos/g,  'acos');
+  s = s.replace(/\\?arctan/g,  'atan');
+
+  // Standard trig
   s = s.replace(/\\sin/g, 'sin');
   s = s.replace(/\\cos/g, 'cos');
   s = s.replace(/\\tan/g, 'tan');
   s = s.replace(/\\sec/g, 'sec');
   s = s.replace(/\\csc/g, 'csc');
   s = s.replace(/\\cot/g, 'cot');
-  s = s.replace(/\\arcsin/g, 'arcsin');
-  s = s.replace(/\\arccos/g, 'arccos');
-  s = s.replace(/\\arctan/g, 'arctan');
+
+  // Hyperbolic trig
   s = s.replace(/\\sinh/g, 'sinh');
   s = s.replace(/\\cosh/g, 'cosh');
   s = s.replace(/\\tanh/g, 'tanh');
+  s = s.replace(/\\sech/g, 'sech');
+  s = s.replace(/\\csch/g, 'csch');
+  s = s.replace(/\\coth/g, 'coth');
+
+  // Log / exp
   s = s.replace(/\\ln/g, 'ln');
   s = s.replace(/\\log/g, 'log');
   s = s.replace(/\\exp/g, 'exp');
+
+  // Named math functions
   s = s.replace(/\\abs/g, 'abs');
   s = s.replace(/\\max/g, 'max');
   s = s.replace(/\\min/g, 'min');
   s = s.replace(/\\mod/g, 'mod');
   s = s.replace(/\\ceil/g, 'ceil');
   s = s.replace(/\\floor/g, 'floor');
+  s = s.replace(/\\round/g, 'round');
   s = s.replace(/\\sign/g, 'sign');
+  s = s.replace(/\\gcd/g, 'gcd');
+  s = s.replace(/\\lcm/g, 'lcm');
+  s = s.replace(/\\cbrt/g, 'cbrt');
+  s = s.replace(/\\nthroot/g, 'nthroot');
+  s = s.replace(/\\hypot/g, 'hypot');
+
 
   // ── Greek letters ───────────────────────────────────────────────────────
   s = s.replace(/\\pi/g, 'pi');
@@ -106,6 +163,10 @@ function cleanLatex(latex: string): string {
   s = s.replace(/\\prod/g, 'prod');
   s = s.replace(/\\_\{/g, '_{');
   s = s.replace(/\\\^\{/g, '^{');
+
+  // ── Spaces ──────────────────────────────────────────────────────────────
+  s = s.replace(/\\\s+/g, ' ');
+  s = s.replace(/\\[ ,:;!]/g, ' ');
 
   // ── Strip remaining LaTeX backslash commands ────────────────────────────
   // Must come last so specific replacements above take precedence
@@ -188,6 +249,48 @@ function App() {
     // We pass a shared memoCache for recursive function speedups during the render
     const memoCache = new Map<string, number | number[]>();
 
+    const pairedIds = new Set<string>();
+
+    for (let i = 0; i < expressions.length - 1; i++) {
+      const expr1 = expressions[i];
+      const expr2 = expressions[i+1];
+      if (!expr1.visible || !expr2.visible || !expr1.latex || !expr2.latex) continue;
+      if (expr1.kind === 'table' || expr2.kind === 'table') continue;
+
+      const f1 = cleanLatex(expr1.latex).replace(/\s+/g, '');
+      const f2 = cleanLatex(expr2.latex).replace(/\s+/g, '');
+
+      if ((f1.startsWith('x=') && f2.startsWith('y=')) || (f1.startsWith('y=') && f2.startsWith('x='))) {
+        const xFormula = f1.startsWith('x=') ? f1 : f2;
+        const yFormula = f1.startsWith('y=') ? f2 : f1;
+
+        try {
+          const xAst = parse(xFormula.substring(2));
+          const yAst = parse(yFormula.substring(2));
+          
+          const testX1 = evaluateAST(xAst, { ...sliderVars, t: 1.2345 }, customFunctions, memoCache) as number;
+          const testX2 = evaluateAST(xAst, { ...sliderVars, t: 2.3456 }, customFunctions, memoCache) as number;
+          const testY1 = evaluateAST(yAst, { ...sliderVars, t: 1.2345 }, customFunctions, memoCache) as number;
+          const testY2 = evaluateAST(yAst, { ...sliderVars, t: 2.3456 }, customFunctions, memoCache) as number;
+          
+          if (!Number.isNaN(testX1) && !Number.isNaN(testY1)) {
+            const isParametric = (testX1 !== testX2) || (testY1 !== testY2);
+            if (isParametric) {
+              const tMin = -24 * Math.PI;
+              const tMax = 24 * Math.PI;
+              const points = evaluateParametricRange(xAst, yAst, tMin, tMax, customFunctions, sliderVars);
+              result.push({ id: expr1.id, color: expr1.color, points, type: 'curve' });
+            } else {
+              result.push({ id: expr1.id, color: expr1.color, points: [{ x: testX1, y: testY1 }], type: 'point' });
+            }
+            pairedIds.add(expr1.id);
+            pairedIds.add(expr2.id);
+            i++;
+          }
+        } catch {}
+      }
+    }
+
     expressions.forEach((expr) => {
       if (expr.kind === 'table') {
         if (!expr.visible || !expr.tableData) return;
@@ -213,6 +316,8 @@ function App() {
         }
         return;
       }
+
+      if (pairedIds.has(expr.id)) return;
 
       if (!expr.visible || !expr.latex || expr.type === 'note' || expr.type === 'slider') {
         result.push({ id: expr.id, color: expr.color, points: [], type: 'curve' });
@@ -244,7 +349,60 @@ function App() {
           return;
         }
 
-        if (noSpaceFormula.includes('=') && noSpaceFormula.includes('y') && noSpaceFormula.includes('x') && !noSpaceFormula.startsWith('y=') && !noSpaceFormula.startsWith('f(x)=')) {
+        let isStandaloneParametric = false;
+        let tAstX: any = null;
+        let tAstY: any = null;
+        let checkFormula = formula;
+        let isXEquals = false;
+        
+        if (formula.includes('=')) {
+          const parts = formula.split('=');
+          if (parts[0].trim() === 'x') {
+            checkFormula = parts[1];
+            isXEquals = true;
+          } else if (parts[0].trim() === 'y' || parts[0].includes('f')) {
+            checkFormula = parts[1];
+          }
+        }
+
+        try {
+          const checkAst = parse(checkFormula);
+          if (checkAst.type !== 'list') {
+            const testT1 = evaluateAST(checkAst, { ...sliderVars, t: 1.2345 }, customFunctions, memoCache) as number;
+            const testT2 = evaluateAST(checkAst, { ...sliderVars, t: 2.3456 }, customFunctions, memoCache) as number;
+            const testX1 = evaluateAST(checkAst, { ...sliderVars, x: 1.2345 }, customFunctions, memoCache) as number;
+            const testX2 = evaluateAST(checkAst, { ...sliderVars, x: 2.3456 }, customFunctions, memoCache) as number;
+
+            const dependsOnT = !Number.isNaN(testT1) && testT1 !== testT2;
+            const dependsOnX = !Number.isNaN(testX1) && testX1 !== testX2;
+
+            if (dependsOnT && !dependsOnX) {
+               isStandaloneParametric = true;
+               if (isXEquals) {
+                  tAstX = checkAst;
+                  tAstY = parse('t');
+               } else {
+                  tAstX = parse('t');
+                  tAstY = checkAst;
+               }
+            }
+          }
+        } catch {}
+
+        if (isStandaloneParametric) {
+          const tMin = -24 * Math.PI;
+          const tMax = 24 * Math.PI;
+          const points = evaluateParametricRange(tAstX, tAstY, tMin, tMax, customFunctions, sliderVars);
+          result.push({ id: expr.id, color: expr.color, points, type: 'curve' });
+          return;
+        }
+
+        const isImplicit = noSpaceFormula.includes('=') && (
+          (noSpaceFormula.includes('y') && noSpaceFormula.includes('x') && !noSpaceFormula.startsWith('y=') && !noSpaceFormula.startsWith('f(x)=')) ||
+          noSpaceFormula.startsWith('x=')
+        );
+
+        if (isImplicit) {
           const [lhs, rhs] = formula.split('=');
           const lhsAst = parse(lhs);
           const rhsAst = parse(rhs);
@@ -328,22 +486,38 @@ function App() {
                 curvePoints.push({ x, y });
              }
              result.push({ id: expr.id + '_area', color: expr.color + '40', points: curvePoints, type: 'integral_area' });
-             
-             // Still plot the scalar value as a horizontal line if desired, or skip it.
-             // Actually Desmos doesn't plot the horizontal line for an integral unless it's y=integral.
-             // But if we plot it, we should plot it. Wait, the evaluator handles integrals too.
-             // Let's just fall through to the scalar plot.
           }
           
-          const testVal = evaluateAST(ast, { x: 0, ...sliderVars }, customFunctions, memoCache);
-          if (Array.isArray(testVal)) {
-            points.push(...testVal.map((val, i) => ({ x: i + 1, y: val })));
-            type = 'point';
+          if (ast.type === 'list' && ast.elements.length === 2) {
+            const testT1 = evaluateAST(ast, { ...sliderVars, t: 1.2345 }, customFunctions, memoCache) as number[];
+            const testT2 = evaluateAST(ast, { ...sliderVars, t: 2.3456 }, customFunctions, memoCache) as number[];
+            const isParametric = Array.isArray(testT1) && Array.isArray(testT2) && (testT1[0] !== testT2[0] || testT1[1] !== testT2[1]);
+
+            if (isParametric) {
+              const tMin = -24 * Math.PI;
+              const tMax = 24 * Math.PI;
+              const pts = evaluateParametricRange(ast.elements[0], ast.elements[1], tMin, tMax, customFunctions, sliderVars);
+              points.push(...pts);
+              type = 'curve';
+            } else if (Array.isArray(testT1) && testT1.every(Number.isFinite)) {
+              points.push({ x: testT1[0], y: testT1[1] });
+              type = 'point';
+            } else {
+              const testVal = evaluateAST(ast, { x: 0, ...sliderVars }, customFunctions, memoCache);
+              points.push(...(Array.isArray(testVal) ? testVal : []).map((val, i) => ({ x: i + 1, y: val })));
+              type = 'point';
+            }
           } else {
-            points.push(...evaluateRange(ast, window, customFunctions, sliderVars));
+            const testVal = evaluateAST(ast, { x: 0, ...sliderVars }, customFunctions, memoCache);
+            if (Array.isArray(testVal)) {
+              points.push(...testVal.map((val, i) => ({ x: i + 1, y: val })));
+              type = 'point';
+            } else {
+              points.push(...evaluateRange(ast, window, customFunctions, sliderVars));
+            }
           }
 
-          if (type === 'curve') {
+          if (type === 'curve' && ast.type !== 'list') {
             const capturedAst = ast;
             const capturedSliderVars = { ...sliderVars };
             const evalFn = (x: number) =>
@@ -440,6 +614,9 @@ function App() {
             onWindowChange={setWindow}
           />
         </div>
+        
+        {/* Virtual Keyboard Overlay */}
+        <VirtualKeyboard />
       </div>
     </div>
   );

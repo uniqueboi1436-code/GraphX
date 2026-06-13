@@ -9,13 +9,13 @@ const FUNCTIONS = new Set([
   'sinh', 'cosh', 'tanh', 'asinh', 'acosh', 'atanh',
   'sech', 'csch', 'cosech', 'coth', 'asech', 'acsch', 'acosech', 'acoth',
   // Logarithmic / exponential
-  'log', 'ln', 'exp',
+  'log', 'ln', 'exp', 'log2', 'log10',
   // Root
   'sqrt', 'cbrt', 'nthroot',
   // Rounding / sign
   'abs', 'floor', 'ceil', 'round', 'sign',
   // Multi-arg
-  'min', 'max', 'mod', 'gcd', 'lcm',
+  'min', 'max', 'mod', 'gcd', 'lcm', 'hypot', 'pow',
   // Stats / list
   'sum', 'product', 'mean', 'length',
   // Calculus keywords (parsed specially)

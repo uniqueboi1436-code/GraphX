@@ -42,6 +42,7 @@ interface GraphStore {
   activeExpressionId: string | null;
   pinnedPOIs: Record<string, boolean>;
   theme: 'dark' | 'white';
+  isKeyboardOpen: boolean;
 
   // Expression actions
   addExpression:   (index?: number) => void;
@@ -66,6 +67,7 @@ interface GraphStore {
   setActiveExpressionId: (id: string | null) => void;
   togglePinnedPOI: (id: string) => void;
   setTheme: (theme: 'dark' | 'white') => void;
+  setKeyboardOpen: (isOpen: boolean) => void;
 }
 
 export const COLORS = ['#c74440', '#2d70b3', '#388c46', '#fa7e19', '#6042a6', '#000000'];
@@ -82,6 +84,7 @@ export const useGraphStore = create<GraphStore>((set) => ({
   activeExpressionId: null,
   pinnedPOIs: {},
   theme: 'dark',
+  isKeyboardOpen: false,
 
   // ── Expression ────────────────────────────────────────────────────────
   addExpression: (index) => {
@@ -219,4 +222,6 @@ export const useGraphStore = create<GraphStore>((set) => ({
     })),
 
   setTheme: (theme) => set({ theme }),
+
+  setKeyboardOpen: (isOpen) => set({ isKeyboardOpen: isOpen }),
 }));

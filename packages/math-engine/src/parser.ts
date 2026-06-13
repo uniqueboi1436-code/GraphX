@@ -313,6 +313,16 @@ export class Parser {
     if (token.type === 'LPAREN') {
       this.consume();
       const expr = this.parseExpression();
+
+      if (this.peek()?.type === 'COMMA') {
+        const elements: Expr[] = [expr];
+        while (this.match('COMMA')) {
+          elements.push(this.parseExpression());
+        }
+        this.consume('RPAREN');
+        return { type: 'list', elements };
+      }
+
       this.consume('RPAREN');
       return expr;
     }

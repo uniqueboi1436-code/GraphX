@@ -322,3 +322,17 @@ describe('Tokenizer', () => {
     expect(parseFloat(toks[0].value)).toBeCloseTo(0.0025);
   });
 });
+
+// ════════════════════════════════════════════════════════════════════════════
+// 19. NEW KEYBOARD / EVALUATOR FUNCTIONS
+// ════════════════════════════════════════════════════════════════════════════
+describe('New keyboard functions', () => {
+  it('log2(8) = 3', () => expect(evN('log2(8)')).toBeCloseTo(3));
+  it('log10(100) = 2', () => expect(evN('log10(100)')).toBeCloseTo(2));
+  it('gcd(12, 18) = 6', () => expect(evN('gcd(12, 18)')).toBe(6));
+  it('lcm(12, 18) = 36', () => expect(evN('lcm(12, 18)')).toBe(36));
+  it('round(4.6) = 5', () => expect(evN('round(4.6)')).toBe(5));
+  it('sign(-42) = -1', () => expect(evN('sign(-42)')).toBe(-1));
+  it('hypot(3, 4) = 5', () => expect(evN('hypot(3, 4)')).toBe(5));
+  it('pow(2, 5) = 32', () => expect(evN('pow(2, 5)')).toBe(32));
+});

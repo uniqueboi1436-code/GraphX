@@ -257,7 +257,7 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({ expressions, window, o
         ctx.beginPath();
         let first = true;
         expr.points.forEach(p => {
-          if (!isFinite(p.y)) {
+          if (!isFinite(p.x) || !isFinite(p.y)) {
             first = true;
             return;
           }

@@ -1,6 +1,6 @@
 import { parse } from './parser';
 import { evaluateAST } from './evaluator';
-import { evaluateRange, Point2D, GraphWindow } from './adaptive';
+import { evaluateRange, evaluateParametricRange, Point2D, GraphWindow } from './adaptive';
 import { detectType, ExpressionType } from './detector';
 import { getUndefinedVariables, collectVariables } from './variables';
 import { fitRegression, fitLinear, fitQuadratic, fitExponential, fitPower, fitSinusoidal } from './regression';
@@ -16,7 +16,7 @@ export function evaluate(expression: string, variables: Record<string, number> =
 }
 
 export {
-  evaluateRange, detectType, parse, evaluateAST,
+  evaluateRange, evaluateParametricRange, detectType, parse, evaluateAST,
   getUndefinedVariables, collectVariables,
   fitRegression, fitLinear, fitQuadratic, fitExponential, fitPower, fitSinusoidal,
   findRoots, findExtrema, findIntersections, getYIntercept, formatFraction, formatCoordinates,

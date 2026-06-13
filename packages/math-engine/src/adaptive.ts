@@ -301,3 +301,81 @@ function adaptiveSample(
     adaptiveSample(xm, ym, x1, y1, points, depth + 1, evalAt, prevAngle, width, height);
   }
 }
+
+export function evaluateParametricRange(
+  xExpr: string | Expr,
+  yExpr: string | Expr,
+  tMin: number,
+  tMax: number,
+  customFunctions: Record<string, CustomFunction> = {},
+  variables: Record<string, number> = {}
+): Point2D[] {
+  const xAst = typeof xExpr === 'string' ? parse(xExpr) : xExpr;
+  const yAst = typeof yExpr === 'string' ? parse(yExpr) : yExpr;
+  
+  const evalAt = (t: number): Point2D => {
+    const x = evaluateAST(xAst, { t, ...variables }, customFunctions) as number;
+    const y = evaluateAST(yAst, { t, ...variables }, customFunctions) as number;
+    return { x, y };
+  };
+
+  const initialSteps = 400; // Base steps, will subdivide where needed
+  const tStep = (tMax - tMin) / initialSteps;
+  const points: Point2D[] = [];
+
+  const adaptiveSampleParametric = (
+    t0: number, p0: Point2D,
+    t1: number, p1: Point2D,
+    depth: number
+  ) => {
+    if (depth >= 6) return;
+
+    const tm = (t0 + t1) / 2;
+    const pm = evalAt(tm);
+
+    const isInvalid = (p: Point2D) => !isFinite(p.x) || !isFinite(p.y);
+    if (isInvalid(p0) && isInvalid(p1) && isInvalid(pm)) {
+      points.push(pm);
+      return;
+    }
+
+    let shouldSubdivide = false;
+    
+    if (isInvalid(p0) !== isInvalid(p1) || isInvalid(p0) !== isInvalid(pm)) {
+      shouldSubdivide = true;
+    } else {
+      const dx1 = pm.x - p0.x;
+      const dy1 = pm.y - p0.y;
+      const angle1 = Math.atan2(dy1, dx1);
+      
+      const dx2 = p1.x - pm.x;
+      const dy2 = p1.y - pm.y;
+      const angle2 = Math.atan2(dy2, dx2);
+
+      // Subdivide if angle changes significantly (smoothness check)
+      if (Math.abs(angle1 - angle2) > 0.05) {
+        shouldSubdivide = true;
+      }
+    }
+
+    if (shouldSubdivide) {
+      adaptiveSampleParametric(t0, p0, tm, pm, depth + 1);
+      points.push(pm);
+      adaptiveSampleParametric(tm, pm, t1, p1, depth + 1);
+    }
+  };
+
+  for (let i = 0; i <= initialSteps; i++) {
+    const t0 = tMin + i * tStep;
+    const p0 = evalAt(t0);
+    points.push(p0);
+
+    if (i < initialSteps) {
+      const t1 = tMin + (i + 1) * tStep;
+      const p1 = evalAt(t1);
+      adaptiveSampleParametric(t0, p0, t1, p1, 0);
+    }
+  }
+
+  return points;
+}

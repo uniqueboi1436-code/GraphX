@@ -22,6 +22,16 @@ function getMQ() {
   return MQ;
 }
 
+// Global reference to the last focused MathField
+let activeMathField: any = null;
+
+export function sendMathCommand(type: 'cmd' | 'write' | 'keystroke' | 'typedText', value: string) {
+  if (activeMathField) {
+    activeMathField[type](value);
+    activeMathField.focus();
+  }
+}
+
 // ── MathQuill config factory ────────────────────────────────────────────────
 function makeMqConfig(onEnter?: () => void, onChange?: (latex: string) => void) {
   return {
@@ -35,8 +45,9 @@ function makeMqConfig(onEnter?: () => void, onChange?: (latex: string) => void) 
       'pi theta alpha beta gamma delta epsilon zeta eta iota kappa lambda mu nu xi ' +
       'rho sigma tau upsilon phi psi omega sqrt sum prod int infty',
     autoOperatorNames:
-      'sin cos tan sec csc cot arcsin arccos arctan sinh cosh tanh log ln exp ' +
-      'abs ceil floor mod max min sign',
+      'sin cos tan sec csc cot arcsin arccos arctan arcsinh arccosh arctanh ' +
+      'sinh cosh tanh sech csch coth log ln exp ' +
+      'abs ceil floor round mod max min sign gcd lcm nthroot cbrt hypot',
     handlers: {
       enter: () => onEnter?.(),
       edit: (mf: any) => onChange?.(mf.latex()),
@@ -85,8 +96,15 @@ export const MathInput: React.FC<MathInputProps> = ({
     field.latex(latex);
     lastLatexRef.current = latex;
 
+    if (!activeMathField) {
+      activeMathField = field;
+    }
+
     // Focus / blur
-    el.addEventListener('focusin',  () => onFocus?.());
+    el.addEventListener('focusin',  () => {
+      activeMathField = field;
+      onFocus?.();
+    });
     el.addEventListener('focusout', () => onBlur?.());
 
     return () => {
